@@ -1,3 +1,7 @@
+-- 1.1 GROUP BY
+
+
+
 -- 1.1.1 GROUP BY 이해하기
 
 -- 데이터 그룹화 문법 SUM, MIN, MAX, COUNT와 같은 집계 함수와 사용할 수 있다.
@@ -47,3 +51,66 @@ GROUP BY TO_CHAR(T1.ORD_DT, 'YYYYMM')
 ORDER BY TO_CHAR(T1.ORD_DT, 'YYYYMM');
 
 
+-- 1.1.3 COUNT 집계함수
+
+-- COUNT는 좀 더 자세히 들여다볼 필요가 있다. 사용방법에 따라 다른 결과가 나올 수 있기 때문이다.
+-- NULL에 대한 COUNT
+-- COUNT 집계함수는 NULL값을 0으로 카운트한다. COUNT(COR1)은 컬럼의 값에 대한 카운트라면 
+-- COUNT(*)는 로우 자체의 건수를 카운트한다. 
+
+-- 위와 같은 특징을 정확히 기억하고 COUNT를 사용해야 한다. 특히 아우터-조인의 경우 COUNT(*)와 COUNT(컬럼명)을 상황에 따라 적절히 사용해야 한다.
+
+
+--  1.1.4 중복을 제거한 COUNT
+-- COUNT안에서 DISTINCT를 사용하면 중복이 제거된다. 
+-- COUNT(DISTINCT)는 여러 컬럼을 동시에 사용할 수 없다. 
+
+-- 1.1.5 HAVING
+-- HAVING 절은 GROUP BY가 수행된 결과 집합에 조건을 줄 때 사용한다. WHERE 절과 같은 기능이라고 생각하면 된다.
+-- HAVNING은 GROUP BY 뒤에 위치한다. WHERE절 처럼 여러개의 AND나 OR를 이용해 조건을 줄 수 있다.
+
+
+-- 1.2 ROLLUP
+
+
+
+-- 1.2.1 ROLLUP 이해하기
+-- 대부분의 분석 리포트는 소계(중간합계)와 전체합계가 필요하다. 소계와 전체합계를 구하는 방법에는 여러 가지가 있지만, BI툴 없이 순수 SQL만 사용해야 한다면 
+-- ROLLUP이 가장 효율적이다. ROLLUP을 자유자재로 사용할 수 있다면 어떤 소계든지 SQL만으로 해결할 수 있다.
+
+-- ROLLUP은 GROUP BY뒤에 ROLLUP이라고 적어서 사용한다. 예를 들어, GROUP BY ROLLUP(A, B, C, D)라고 사용하면 다음과 같은 데이터들이 조회된다.
+-- GROUP BY된 A+B+C+D별 데이터
+-- A+B+C별 소계 데이터
+-- A+B별 소계 데이터
+-- A별 소계 데이터
+-- 전체합계
+
+-- GROUP BY만 사용된 예
+SELECT TO_CHAR(T1,ORD_DT, 'YYYYMM') ORD_YM
+	   ,T1.CUS_ID
+	   ,SUM(T1.ORD_AMT) ORD_AMT
+FROM T_ORD T1
+WHERE T1.CUS_ID IN ('CUS_0001', 'CUS_0002')
+AND T1.ORD_DT >= TO_DATE('20201202', 'YYYYMM')
+AND T1.ORD_DT < TO_DATE('20201202', 'YYYYMM')
+GROUP BY TO_CHAR(T1.ORD_DT, 'YYYYMM'), T1.CUS_ID;
+
+-- GROUP BY ROLLUP 예
+SELECT TO_CHAR(T1,ORD_DT, 'YYYYMM') ORD_YM
+	   ,T1.CUS_ID
+	   ,SUM(T1.ORD_AMT) ORD_AMT
+FROM T_ORD T1
+WHERE T1.CUS_ID IN ('CUS_0001', 'CUS_0002')
+AND T1.ORD_DT >= TO_DATE('20201202', 'YYYYMM')
+AND T1.ORD_DT < TO_DATE('20201202', 'YYYYMM')
+GROUP BY 
+ROLLUP(TO_CHAR(T1.ORD_DT, 'YYYYMM'), T1.CUS_ID);
+
+-- ROLLUP을 사용하면 소계와 전체합계를 추가할 수 있따.
+
+
+-- 1.2.2 ROLLUP의 컬럼 순서
+-- ROLLUP에 사용하는 컬럼 순서는 매우 중요하다. 컬럼 순서에 따라 다른 소계가 나오기 때문이다.
+
+
+-- 
