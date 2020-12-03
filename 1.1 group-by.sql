@@ -111,6 +111,8 @@ ROLLUP(TO_CHAR(T1.ORD_DT, 'YYYYMM'), T1.CUS_ID);
 
 -- 1.2.2 ROLLUP의 컬럼 순서
 -- ROLLUP에 사용하는 컬럼 순서는 매우 중요하다. 컬럼 순서에 따라 다른 소계가 나오기 때문이다.
+-- ROLLUP은 사영된 컬럼 순서대로 계층적 소계를 만든다. 아래 두 케이스를 살펴보자.
+-- 1. GROUP BY ROLLUP(A, B, C, D): A + B + C별 소계, A + B별 소계, A별 소계, 전체 합계
+-- 2. GROUP BY ROLLUP(B, A, C, D): B + A + C별 소계, B + A별 소계, B별 소계, 전체 합계
 
-
--- 
+-- 1.2.3 GROUPING
