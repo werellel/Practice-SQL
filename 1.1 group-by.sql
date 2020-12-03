@@ -115,6 +115,7 @@ ROLLUP(TO_CHAR(T1.ORD_DT, 'YYYYMM'), T1.CUS_ID);
 -- 1. GROUP BY ROLLUP(A, B, C, D): A + B + C별 소계, A + B별 소계, A별 소계, 전체 합계
 -- 2. GROUP BY ROLLUP(B, A, C, D): B + A + C별 소계, B + A별 소계, B별 소계, 전체 합계
 
+
 -- 1.2.3 GROUPING
 -- ROLLUP과 절대 뗄 수 없는 함수다. GROUPING 함수는 특정 컬럼의 값이 소계인지 아닌지 구분해준다.(GROUPING SETS과는 전혀 다른 기능이다.)
 -- GROUPING 함수는 해당 컬럼이 ROLLUP 처리되었으면 1을 반환하고, 그렇지 않으면 0을 반환한다.
@@ -123,3 +124,26 @@ SELECT T1.ORD_ST, GROUPING(T1.ORD_ST) GR_ORD_ST
 	 , COUNT(*) ORD_CNT
 FROM T_ORD T1
 GROUP BY ROLLUP(T1.ORD_ST, T1.PAY_TP);
+
+
+-- 1.2.4 ROLLUP 컬럼의 선택
+-- 특정 컬럼의 소계만 필요하거나 전체 합계만 필요할 때가 있다. 이떄로 ROLLUP으로 해결할 수 있다.
+-- ROLLUP의 위치를 옮기거나 소계가 필요한 대상을 괄호로 조정하면 된다. 특히 전체 합계만 추가하는 기능은 매우 유용하다.
+SELECT CASE WHEN GROUPING(TO_CHAR(T2.ORD_DT, 'YYYYMM'))=1 THEN 'Total'
+			ELSE TO_CHAR(T2.ORD_DT, 'YYYYMM') END ORD_YM
+	 , CASE WHEN GROUPING(T1.RGN_ID)=1 THEN 'Total' ELSE T1.RGN_ID END RGN_ID
+	 , CASE WHEN GROUPING(T1.CUS_GD)=1 THEN 'Total' ELSE T1.CUS_GD END CUS_GD
+	 , SUM(T2.ORD_AMT) ORD_AMT
+FROM M_CUS T1
+   , T_ORD T2
+WHERE T1.CUS_ID = T2.CUS_ID
+AND   T2.ORD_DT >= TO_DATE('20170201', 'YYYYMM')
+AND   T2.ORD_DT < TO_DATE('20170401', 'YYYYMM')
+AND   T1.RGN_ID IN ('A', 'B')
+GROUP BY ROLLUP(TO_CHAR(T2.ORD_DT, 'YYYYMM'), T1.RGN_ID, T1.CUS_GD)
+ORDER BY TO_CHAR(T2.ORD_DT, 'YYYYMM'), T1.RGN_ID, T1.CUS_GD;
+
+-- 여러 컬럼을 하나의 괄호로 묶으면 전체합계와 일부 컬럼만 소계를 내야 할 때 매우 유용하다. 
+GROUP BY ROLLUP((TO_CHAR(T2.ORD_DT, 'YYYYMM'), T1.RGN_ID, T1.CUS_GD))
+
+
