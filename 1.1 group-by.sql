@@ -116,3 +116,10 @@ ROLLUP(TO_CHAR(T1.ORD_DT, 'YYYYMM'), T1.CUS_ID);
 -- 2. GROUP BY ROLLUP(B, A, C, D): B + A + C별 소계, B + A별 소계, B별 소계, 전체 합계
 
 -- 1.2.3 GROUPING
+-- ROLLUP과 절대 뗄 수 없는 함수다. GROUPING 함수는 특정 컬럼의 값이 소계인지 아닌지 구분해준다.(GROUPING SETS과는 전혀 다른 기능이다.)
+-- GROUPING 함수는 해당 컬럼이 ROLLUP 처리되었으면 1을 반환하고, 그렇지 않으면 0을 반환한다.
+SELECT T1.ORD_ST, GROUPING(T1.ORD_ST) GR_ORD_ST
+	 , T1.PAY_TP, GROUPING(T1.PAY_TP) GR_PAY_ST
+	 , COUNT(*) ORD_CNT
+FROM T_ORD T1
+GROUP BY ROLLUP(T1.ORD_ST, T1.PAY_TP);
