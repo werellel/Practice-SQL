@@ -168,4 +168,25 @@ GROUP BY ROLLUP((TO_CHAR(T2.ORD_DT, 'YYYYMM'), T1.RGN_ID, T1.CUS_GD))
 -- CARTESIAN-JOIN을 사용해 소계와 전체합계를 만들어 낼 수 있다. 
 -- FROM 절에 두 개 이상의 테이블이 있을 떄, 조인-조건을 주지 않으면 CARTESIAN-JOIN이 발생한다. 조인 대상의 건수를 곱한 만큼 결과가 만들어진다.
 -- 5건, 10건 존재 하는 각각의 테이블이 있을 때 50건의 조인 결과가 나온다.
+-- 카테시안 조인은 테이블에 데이터가 너무 많으면 성능이 저하된다. 그리고 SQL이 너무 어렵다. 작성한 개발자외에는 이해하기 어려우며 개발한 사람도 시간이 지나면 헷갈린다.
 
+-- (3) WITH와 UNOIN ALL로 대신하기
+-- WITH 절로 GROUP BY된 결과를 정의하고 메인 SQL에서 UNION ALL을 하는 방법인데 작성양도 적고 보기에도 깔끔해진다. 
+
+
+-- 1.3.2 CUBE
+-- CUBE는 조합 가능한 모든 소계를 만들어 낸다. 사용 방법은 ROLLUP과 같다. 
+-- ROLLUP이 사용된 부분을 CUBE로 변경해 주기만 하면 된다.
+-- GROUP BY CUBE(A, B, C)라고 하면, 6개의 소계와 전체합계가 만들어진다.
+-- A+B 소계, A+C 소계, B+C소계, B 소계, C 소계, A 소계
+
+
+-- 1.3.3
+-- GROUPING SETS
+-- GROUPING SETS도 소계를 만든다. ROLLUP이나 CUBE 대신에 표기한 후 컬럼을 괄호로 묶어 나열해 주면 된다.
+-- GROUPING SETS(
+			  (TO_CHAR(T1.ORD_DT, 'YYYYMM'), T1.CUS_ID) -- GROUP BY 기본 데이터
+			, (TO_CHAR(T1.ORD_DT, 'YYYYMM')) -- 주문년월 소계 
+			, (T1.CUS_ID) -- 고객ID별 소계
+			, () -- 전체합계
+)
