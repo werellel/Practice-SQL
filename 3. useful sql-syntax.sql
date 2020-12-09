@@ -88,4 +88,70 @@ WHERE EXISTS(
 
 
 -- 3.2 MERGE
+-- 데이터의 존재 여부에 따라 데이터를 INSERT 하거나 UPDATE 하는 경우가 많다. 이때 유용하게 사용할 수 있는 것이 MERGE다.
+-- MERGE는 한 문장으로 INSERT와 UPDATE를 동시에 처리할 수 있다. 한 건의 데이터가 동시에 INSERT와 UPDATE 되는 것은 아니다. 한 건의 데이터는 INSERT와 UPDATE 중 하나만이
+-- 수행된다. MERGE 대상이 이미 존재하면 UPDATE를, 대상이 존재하지 않으면 INSERT를 수행하는 방식이다.
 
+-- 같은 고객 ID가 이미 있으면 고객 정보를 업데이트하고, 같은 고객ID가 없으면 신규 고객으로 등록을 한다.
+
+-- 이와 같은 로직을 처리하기 위해 아래와 같이 PL/SQL을 사용해 보자. (PL/SQL은 오라클이 제공하는 절차형 언어 형식의 SQL 블록이라고 생각하면 된다.)
+-- PL/SQL로 처리하기 위해서는 SQL 문장들을 BEGIN과 END 블록으로 감싸서 처리하면 된다.
+DECLARE v_EXISTS_YN varchar(1);
+BEGIN
+	SELECT NVL(MAX('Y'), 'N')
+	INTO v_EXISTS_YN
+	FROM DUAL A
+	WHERE EXISTS(
+			SELECT *
+			FROM M_CUS_CUD_TEST T1
+			WHERE T1.CUS_ID = 'CUS_0000'
+		);
+
+	IF v_EXISTS_YN = 'N' THEN
+		INSERT INTO M_CUS_CUD_TEST (CUS_ID, CUS_NM, CUS_GD)
+		VALUES ('CUS_0090', 'NAME_0090', 'A');
+	ELSE
+		UPDATE M_CUS_CUD_TEST T1
+		SET    T1.CUS_NM = 'NAME_0090'
+			 , T1.CUS_GD = 'A'
+		WHERE  CUS_ID = 'CUS_0090'
+		;
+
+		DBMS_OUTPUT.PUT_LINE('UPDATE OLD CUST');
+	END IF;
+	COMMIT;
+END;
+
+-- EXISTS, INSERT, UPDATE 이 3개의 SQL은 하나의 MERGE 문장으로 처리할 수 있다.
+MERGE INTO M_CUS_CUD_TEST T1
+USING (
+	  SELECT 'CUS_0090' CUS_ID
+	       , 'NAME_0090' CUS_NM
+	       , 'A' CUS_GD
+	  FROM DUAL
+	  ) T2
+	  ON (T1.CUS_ID = T2.CUS_ID)
+WHEN MATCHED THEN UPDATE SET T1.CUS_NM = T2.CUS_NM
+						   , T1.CUS_GD = T2.CUS_GD
+WHEN NOT MATCHED THEN INSERT (T1.CUS_ID, T1.CUS_NM, T1.CUS_GD)
+					  VALUES (T2.CUS_iD, T2.CUS_NM, T2.CUS_GD)
+COMMIT;
+
+-- MERGE 문에는 'MERGE 대상'과 '비교 대상'이 있다. 각각을 설명하면 아래와 같다.
+-- MERGE 대상: UPDATE되거나, INSERT 될 테이블
+-- : MERGE INTO 절 뒤에 정의한다.
+-- : 위 SQL에서는 M_CUS_CUD_TEST가 MERGE 대상이다. T1이 별칭이다.
+-- 비교 대상: MERGE 대상의 처리 방법을 결정할 비교 데이터 집합
+-- : USING 절 뒤에 정의한다.
+-- : 위 SQL에서는 2~7번 라인의 인라인-뷰가 비교 대상이다. T2가 별칭이다.
+-- : 여러 건을 비교 대상으로 정의할 수 있다.
+
+-- MERGE 대상과 비교 대상은 ON 절을 이용해 '비교 조건'을 정의한다. 위 SQL에서 8번 라인에 해당한다.
+-- 비교 조건의 결과에 따라 UPDATE나 INSERT를 처리할 수 있다. '비교 조건' 결과에 따라 아래와 같이 처리한다.
+-- WHEN MATCHED THEN: 비교 대상의 데이터가 MERGE 대상에 이미 있음
+-- : MERGE 대상을 UPDATE 처리하면 된다.
+-- WHEN NOT MATCHED THEN: 비교 대상의 데이터가 MERGE 대상에 없음
+-- : MERGE 대상에 새로운 데이터를 입력하면 된다.
+
+
+-- 3.2.2 MERGE를 사용한 UPDATE
